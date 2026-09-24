@@ -25,7 +25,7 @@ char *sys_sbrk(int, int);
 int pause(int);
 int uptime(void);
 int sync(void);
-int syscalltrace(void);
+int syscalltrace(int);
 
 // ulib.c
 int stat(const char *, struct stat *);
