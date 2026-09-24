@@ -105,6 +105,37 @@ extern uint64 sys_sync(void);
 extern uint64 sys_syscalltrace(void);
 
 // An array mapping syscall numbers from syscall.h
+// to a char version of them for the output of  syscalltrace
+static char *syscall_names[] = {   
+ [SYS_fork]    = "fork",
+  [SYS_exit]    = "exit",
+  [SYS_wait]    = "wait",
+  [SYS_pipe]    = "pipe",
+  [SYS_read]    = "read",
+  [SYS_kill]    = "kill",
+  [SYS_exec]    = "exec",
+  [SYS_fstat]   = "fstat",
+  [SYS_chdir]   = "chdir",
+  [SYS_dup]     = "dup",
+  [SYS_getpid]  = "getpid",
+  [SYS_sbrk]    = "sbrk",
+  [SYS_pause]   = "pause",
+  [SYS_uptime]  = "uptime",
+  [SYS_open]    = "open",
+  [SYS_write]   = "write",
+  [SYS_mknod]   = "mknod",
+  [SYS_unlink]  = "unlink",
+  [SYS_link]    = "link",
+  [SYS_close]   = "close",
+  [SYS_sync]    = "sync",
+  [SYS_syscalltrace] = "syscalltrace",
+};
+
+
+
+
+
+// An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
 static uint64 (*syscalls[])(void) = {
   // clang-format off
@@ -127,7 +158,6 @@ static uint64 (*syscalls[])(void) = {
   [SYS_mknod]   = sys_mknod,
   [SYS_unlink]  = sys_unlink,
   [SYS_link]    = sys_link,
-  [SYS_mkdir]   = sys_mkdir,
   [SYS_close]   = sys_close,
   [SYS_sync]    = sys_sync,
   [SYS_syscalltrace] = sys_syscalltrace,
@@ -141,8 +171,11 @@ syscall(void)
   struct proc *p = myproc();
 
   num = p->trapframe->a7;
-  if (p->syscall_trace) {
-    printk("%d: syscall %s/n", p->pid, p->name);
+  // checks to see if call trace is active and its not the write syscall
+  // prints out the names and pid if active
+  if (p->syscall_trace && num != SYS_write) {
+    printk("Syscall Name: %s\n", syscall_names[num]);
+    printk("Process PID: %d\n", p->pid);
   }
   if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     // Use num to lookup the system call function for num, call it,
