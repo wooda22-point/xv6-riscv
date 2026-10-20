@@ -24,6 +24,8 @@ struct cpu {
   struct context context; // swtch() here to enter scheduler().
   int noff;               // Depth of push_off() nesting.
   int intena;             // Were interrupts enabled before push_off()?
+  int priority;           // the priority of the proc
+  int num_epoch_slots;    // set the num of slots the proc should use
 };
 
 extern struct cpu cpus[NCPU];
