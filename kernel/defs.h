@@ -78,7 +78,9 @@ int             printk(char*, ...) __attribute__ ((format (printf, 1, 2)));
 void            panic(char*) __attribute__((noreturn));
 void            printkinit(void);
 
+
 // proc.c
+int             mode_change(int choice);
 int             cpuid(void);
 void            kexit(int);
 int             kfork(void);

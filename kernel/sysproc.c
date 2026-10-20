@@ -110,3 +110,12 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// changes the debug mode
+// returns an error if value is out of range
+uint64
+sys_debug(void) {
+  int choice;
+  argint(0, &choice);
+  return mode_change(choice);
+}

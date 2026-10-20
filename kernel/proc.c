@@ -6,6 +6,9 @@
 #include "proc.h"
 #include "defs.h"
 
+// debug mode variable
+int mode = 0;
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -25,6 +28,18 @@ extern char trampoline[]; // trampoline.S
 // memory model when using p->parent.
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
+
+// changes the debug value
+int mode_change(int choice) {
+  if (choice > 1 || choice < 0) {
+    return -1;
+  } else  {
+      mode = choice;
+  }
+  return mode;
+}
+
+
 
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
@@ -291,6 +306,7 @@ kfork(void)
 
   pid = np->pid;
 
+
   release(&np->lock);
 
   acquire(&wait_lock);
@@ -298,6 +314,11 @@ kfork(void)
   release(&wait_lock);
 
   acquire(&np->lock);
+
+  // sets the priority and epoch slots
+  np->priority = 10;
+  np->num_epoch_slots = 0;
+
   np->state = RUNNABLE;
   release(&np->lock);
 
