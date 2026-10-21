@@ -357,7 +357,7 @@ pfork(int prior)
   *(np->trapframe) = *(p->trapframe);
 
   // Cause fork to return 0 in child.
-  // could cause issues
+  np->trapframe->a0 = 0;
 
   // increment reference counts on open file descriptors.
   for (i = 0; i < NOFILE; i++)

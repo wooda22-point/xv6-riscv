@@ -44,8 +44,28 @@ int count_Armstrong(int limit) {
 }
 
 int main(int argc, char*argv[]) {
-  int limit = 1000000;
-  printf("count = %d\n", count_Armstrong(limit));
-  exit(0);
+  // gets the limit from cmd line
+  int limit = atoi(argv[1]);
+  // list of priorities and sets debug
+  int priority[8] = {0,0,5,5,10,10,15,15};
+  debug(1);
 
+  // loops through and creats fork for every priority
+  for (int i = 0; i < 8; i++) {
+    int pid = pfork(priority[i]);
+    if (pid == 0) {
+      // runs armstrong if child
+      int count = count_Armstrong(limit);
+      printf("count = %d\n", count);
+      exit(0);
+    }
+  }
+
+  // wait loop for each child process
+  for (int i = 0; i < 8; i++) {
+    wait(0);
+  }
+  // changes debug and ends
+  debug(0);
+  exit(0);
 }
