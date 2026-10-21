@@ -81,6 +81,7 @@ void            printkinit(void);
 
 // proc.c
 int             mode_change(int choice);
+int             pfork(int prior);
 int             cpuid(void);
 void            kexit(int);
 int             kfork(void);

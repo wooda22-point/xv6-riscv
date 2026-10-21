@@ -119,3 +119,12 @@ sys_debug(void) {
   argint(0, &choice);
   return mode_change(choice);
 }
+
+// creates a new fork with priorty assigned
+//
+uint64
+sys_pfork(void) {
+ int prior;
+ argint(0,&prior);
+ return pfork(prior);
+}
