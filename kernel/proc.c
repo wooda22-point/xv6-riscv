@@ -505,6 +505,62 @@ kwait(uint64 addr)
   }
 }
 
+#define EPOCH_SLOTS 40
+
+int cursor = 0;
+
+void compute_epoch_slot(void) {
+  struct proc *p;
+  int sum = 0;
+
+  // goes through and get the total weight of all runnable processes
+  for(p = proc; p <&proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state == RUNNABLE) {
+      sum += 20 - p->priority;
+    }
+    release(&p->lock);
+  }
+
+  if (mode == 1) {
+    printk("epoch starts\n");
+  }
+
+  if (sum == 0) {
+    return;
+  }
+
+  // assigns the num of slots
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->state == RUNNABLE) {
+      p->num_epoch_slots = EPOCH_SLOTS * (20 - p->priority) / sum;
+      // check for starvation
+      if (p->num_epoch_slots == 0) {
+        p->num_epoch_slots = 1;
+      } else {
+        p->num_epoch_slots = 0;
+      }
+      release(&p->lock);
+    }
+  }
+}
+
+
+// finds the next process to run
+struct proc* next_proc(int start, int end) {
+  struct proc *p;
+  for (int i = start; i < end; i++) {
+    p = &proc[i];
+    acquire(&p->lock);
+    if (p->state == RUNNABLE && p->num_epoch_slots > 0) {
+      return p;
+    }
+    release(&p->lock);
+  }
+  return 0;
+}
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -526,7 +582,42 @@ scheduler(void)
     // to avoid a possible race between an interrupt
     // and wfi.
     intr_on();
+    p = next_proc(cursor,NPROC);
+    if (p == 0) {
+      p = next_proc(0, cursor);
+    }
+
+    if (p == 0) {
+      compute_epoch_slot();
+      cursor = 0;
+      p = next_proc(0, NPROC);
+      if (p == 0) {
+        //nothing is able to be run so we wait for interupt
+        asm volatile("wfi");
+        continue;
+      }
+    }
     intr_off();
+    int idx = p - proc;
+
+    if (mode == 1) {
+      printk("slot: pid %d priorirty %d\n", p->pid, p->priority);
+    }
+
+    p->state = RUNNING;
+    c->proc = p;
+    swtch(&c->context, &p->context);
+    c->proc = 0;
+
+    p->num_epoch_slots--;
+
+    cursor = (p->num_epoch_slots > 0) ? idx : idx + 1;
+    release(&p->lock);
+
+
+
+
+    /*
 
     int found = 0;
     for (p = proc; p < &proc[NPROC]; p++) {
@@ -553,6 +644,8 @@ scheduler(void)
       // nothing to run; stop running on this core until an interrupt.
       asm volatile("wfi");
     }
+  */
+
   }
 }
 
