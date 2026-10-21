@@ -538,17 +538,17 @@ void compute_epoch_slot(void) {
       // check for starvation
       if (p->num_epoch_slots == 0) {
         p->num_epoch_slots = 1;
-      } else {
-        p->num_epoch_slots = 0;
       }
-      release(&p->lock);
+    } else {
+        p->num_epoch_slots = 0;
     }
+    release(&p->lock);
   }
 }
 
 
 // finds the next process to run
-struct proc* next_proc(int start, int end) {
+static struct proc* next_proc(int start, int end) {
   struct proc *p;
   for (int i = start; i < end; i++) {
     p = &proc[i];
