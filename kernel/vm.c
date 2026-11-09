@@ -279,8 +279,26 @@ freewalk(pagetable_t pagetable)
   kfree((void *)pagetable);
 }
 
+// count the number of frames that is currently
+// allocated
+
 int countframes(pagetable_t pagetable) {
   int count = 0;
+  for (int i = 0; i < 512; i++) {
+    pte_t pte = pagetable[i];
+
+    if (pte & PTE_V) {
+      if ((pte & (PTE_R | PTE_W |PTE_X)) == 0) {
+        // Non-leaf PTE: traverse the next page-table level.
+        pagetable_t child = (pagetable_t)PTE2PA(pte);
+        count += countframes(child);
+      } else {
+        // Leaf PTE: count the mapped physical frame.
+        count++;
+      }
+    }
+  }
+
   return count;
 }
 
