@@ -110,3 +110,10 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// new syscall that tracks how many frames are allocated
+// to the current process 
+
+uint64 sys_trackframes(void) {
+  return countframes(myproc()->pagetable);
+}

@@ -279,6 +279,14 @@ freewalk(pagetable_t pagetable)
   kfree((void *)pagetable);
 }
 
+int countframes(pagetable_t pagetable) {
+  int count = 0;
+  return count;
+}
+
+
+
+
 // Free user memory pages,
 // then free page-table pages.
 void
