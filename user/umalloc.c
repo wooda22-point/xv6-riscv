@@ -2,6 +2,7 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 #include "kernel/param.h"
+#include "kernel/riscv.h"
 
 // Memory allocator by Kernighan and Ritchie,
 // The C programming Language, 2nd ed.  Section 8.7.
@@ -20,6 +21,116 @@ typedef union header Header;
 
 static Header base;
 static Header *freep;
+
+// constants for num of size and max block pages
+#define NUM_CLASSES 9
+#define MAX_BLOCK_PAGES 256
+
+// individual free block
+struct block {
+  struct block *next;
+};
+
+// Each index is a different block size
+static struct block *free_list[NUM_CLASSES] = {0};
+
+// struct for page info
+struct page_info {
+  char *start;
+  int index;
+};
+
+// keep tracks of the pages for easier deallocation
+static struct page_info pages[MAX_BLOCK_PAGES];
+
+// stores the page count
+static int page_count = 0;
+
+// helper function to get the size of pages using an index
+static int get_class(int nbytes) {
+  // cant use if less than zero
+  if (nbytes <= 0) {
+    return -1;
+  }
+
+  // default size
+  int size = 16;
+
+  // checks the size and returns the index from 0-8
+  for (int i = 0; i < NUM_CLASSES; i++) {
+    if (nbytes <= size) {
+      return i;
+    }
+    size *= 2;
+  }
+  // fail safe incase of no size matching
+  return -1;
+}
+
+// allocates blocks of memory to specification of assignment
+void * block_alloc(int nbytes) {
+  // gets and checks index
+  int index = get_class(nbytes);
+
+  if (index < 0) {
+    return 0;
+  }
+  // epic bit shift to get easy size since all are powers of two
+  int size = 16 << index;
+
+  // allocate a new page if the free list is empty
+  if (free_list[index] == 0) {
+    if (page_count >= MAX_BLOCK_PAGES) {
+      return 0;
+    }
+    char *page = sbrk(PGSIZE);
+    if (page == SBRK_ERROR) {
+      return 0;
+    }
+    // update the page info array
+    pages[page_count].start = page;
+    pages[page_count].index = index;
+    page_count++;
+    // divide the page into equally sized blocks
+    int count = PGSIZE / size;
+    for (int i = 0; i < count; i++) {
+      // i HATE pointers
+      struct block *b = (struct block *)(page + i * size);
+      b->next = free_list[index];
+      free_list[index] = b;
+    }
+  }
+  // remove a block from the free list
+  struct block *b = free_list[index];
+
+  free_list[index] = b->next;
+
+  return (void *)b;
+}
+
+// frees the blocks that were allocated
+void block_free (void *ptr) {
+  if (ptr == 0) {
+    return;
+  }
+
+  // Find which allocated page contains this pointer
+  for (int i = 0; i < page_count; i++) {
+    char *start = pages[i].start;
+    char *end = start + PGSIZE;
+    // more pointer pain
+    if ((char *)ptr >= start && (char *)ptr < end) {
+      int index = pages[i].index;
+      // return the block to it size class's free list
+      struct block *b = (struct block *)ptr;
+
+      b->next = free_list[index];
+      free_list[index] = b;
+
+      return;
+    }
+  }
+}
 
 void
 free(void *ap)
